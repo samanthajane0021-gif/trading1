@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .temp-display {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .forecast-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .forecast-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.05);
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+            background: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .error-box {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .success-box {
+            background: #efe;
+            border: 2px solid #cfc;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .favorites-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .favorite-item {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .favorite-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="min-h-screen py-8 px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-5xl font-bold text-white mb-2">
+                    <i class="fas fa-cloud-sun"></i> Weather Dashboard
+                </h1>
+                <p class="text-white/80 text-lg">Real-time weather data from around the world</p>
+            </div>
+
+            <!-- Search Section -->
+            <div class="weather-card p-6 mb-8">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="search-input flex-1"
+                        placeholder="Enter city name..."
+                        onkeypress="handleSearchKeyPress(event)"
+                    >
+                    <button onclick="searchWeather()" class="btn-primary">
+                        <i class="fas fa-search mr-2"></i> Search
+                    </button>
+                    <button onclick="getCurrentLocation()" class="btn-primary" title="Use current location">
+                        <i class="fas fa-location-dot"></i>
+                    </button>
+                </div>
+                <div id="message" class="mt-4"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Weather Card -->
+                <div class="lg:col-span-2">
+                    <div class="weather-card p-8 mb-8">
+                        <div id="weatherContent" class="text-center">
+                            <div class="mb-4">
+                                <div class="loading mx-auto"></div>
+                                <p class="text-gray-600 mt-3">Loading weather data...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Forecast -->
+                    <div class="weather-card p-8 mb-8">
+                        <h2 class="text-2xl font-bold mb-6 gradient-text">
+                            <i class="fas fa-clock mr-2"></i> Hourly Forecast
+                        </h2>
+                        <div id="hourlyForecast" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            <div class="forecast-item">
+                                <div class="loading mx-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5-Day Forecast -->
+                    <div class="weather-card p-8">
+                        <h2 class="text-2xl font-bold mb-6 gradient-text">
+                            <i class="fas fa-calendar-days mr-2"></i> 5-Day Forecast
+                        </h2>
+                        <div id="dailyForecast" class="space-y-4">
+                            <div class="forecast-item">
+                                <div class="loading mx-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-8">
+                    <!-- Current Stats -->
+                    <div class="weather-card p-6">
+                        <h2 class="text-xl font-bold mb-4 gradient-text">
+                            <i class="fas fa-chart-line mr-2"></i> Details
+                        </h2>
+                        <div id="statsContent" class="space-y-3">
+                            <div class="loading mx-auto"></div>
+                        </div>
+                    </div>
+
+                    <!-- Weather Alerts -->
+                    <div class="weather-card p-6">
+                        <h2 class="text-xl font-bold mb-4 gradient-text">
+                            <i class="fas fa-bell mr-2"></i> Alerts
+                        </h2>
+                        <div id="alertsContent" class="space-y-3">
+                            <p class="text-gray-500 text-sm">No alerts at this time</p>
+                        </div>
+                    </div>
+
+                    <!-- Favorites -->
+                    <div class="weather-card p-6">
+                        <h2 class="text-xl font-bold mb-4 gradient-text">
+                            <i class="fas fa-star mr-2"></i> Favorites
+                        </h2>
+                        <div id="favoritesList" class="favorites-list space-y-2">
+                            <p class="text-gray-500 text-sm">No favorites yet. Add one to get started!</p>
+                        </div>
+                        <button onclick="saveFavorite()" class="btn-primary w-full mt-4" id="favBtn">
+                            <i class="fas fa-heart mr-2"></i> Add to Favorites
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="weather-card p-6 mt-8">
+                <h2 class="text-2xl font-bold mb-6 gradient-text">
+                    <i class="fas fa-cog mr-2"></i> Settings
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Temperature Unit</label>
+                        <select id="tempUnit" onchange="changeTempUnit()" class="search-input w-full">
+                            <option value="celsius">°C (Celsius)</option>
+                            <option value="fahrenheit">°F (Fahrenheit)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Wind Speed Unit</label>
+                        <select id="windUnit" onchange="changeWindUnit()" class="search-input w-full">
+                            <option value="mps">m/s</option>
+                            <option value="kmh">km/h</option>
+                            <option value="mph">mph</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Time Format</label>
+                        <select id="timeFormat" onchange="changeTimeFormat()" class="search-input w-full">
+                            <option value="12">12-hour</option>
+                            <option value="24">24-hour</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="weather.js"></script>
+</body>
+</html>
