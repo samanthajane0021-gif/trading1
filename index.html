@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3/dist/lightweight-charts.production.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -21,6 +22,37 @@
         .gradient-gold { background: linear-gradient(135deg, #F0B90B, #f9a825); }
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-overlay { backdrop-filter: blur(5px); }
+        .trade-progress-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 350px;
+        }
+        .progress-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(#F0B90B 0deg, #F0B90B var(--progress), #e5e7eb var(--progress));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        #tradingview-chart {
+            width: 100%;
+            height: 500px;
+        }
     </style>
 </head>
 <body class="dark-bg text-white min-h-screen">
@@ -82,7 +114,7 @@
                 </div>
                 <div onclick="navigateTo('assets')" class="flex items-center gap-2 bg-[#1F252F] px-4 py-2 rounded-xl cursor-pointer hover:bg-[#2F3540]">
                     <i class="fas fa-wallet"></i>
-                    <span id="balance-display" class="font-mono text-sm font-bold">$10,000.00</span>
+                    <span id="balance-display" class="font-mono text-sm font-bold">$0.00</span>
                 </div>
                 <button onclick="logoutUser()" class="bg-transparent border border-gray-600 hover:border-white px-5 py-2 rounded-3xl text-sm transition">Logout</button>
             </div>
@@ -115,7 +147,7 @@
                 <div class="card-bg rounded-2xl p-8 hover:border-[#F0B90B] border border-transparent transition">
                     <i class="fas fa-chart-candlestick text-4xl gold-accent mb-4"></i>
                     <h3 class="text-2xl font-bold mb-3">Live Charts</h3>
-                    <p class="text-gray-300">Professional TradingView candlestick charts with real-time price data for all major assets.</p>
+                    <p class="text-gray-300">Professional candlestick charts with real-time price data for all major assets.</p>
                 </div>
                 <div class="card-bg rounded-2xl p-8 hover:border-[#F0B90B] border border-transparent transition">
                     <i class="fas fa-lightning-bolt text-4xl gold-accent mb-4"></i>
@@ -125,7 +157,7 @@
                 <div class="card-bg rounded-2xl p-8 hover:border-[#F0B90B] border border-transparent transition">
                     <i class="fas fa-lock text-4xl gold-accent mb-4"></i>
                     <h3 class="text-2xl font-bold mb-3">Secure & Regulated</h3>
-                    <p class="text-gray-300">Bank-grade security with Supabase authentication and encrypted wallet management.</p>
+                    <p class="text-gray-300">Bank-grade security with encryption and secure wallet management.</p>
                 </div>
                 <div class="card-bg rounded-2xl p-8 hover:border-[#F0B90B] border border-transparent transition">
                     <i class="fas fa-coins text-4xl gold-accent mb-4"></i>
@@ -138,9 +170,9 @@
                     <p class="text-gray-300">Fully responsive platform. Trade from desktop, tablet, or smartphone anytime, anywhere.</p>
                 </div>
                 <div class="card-bg rounded-2xl p-8 hover:border-[#F0B90B] border border-transparent transition">
-                    <i class="fas fa-24/7 text-4xl gold-accent mb-4"></i>
-                    <h3 class="text-2xl font-bold mb-3">24/7 Markets</h3>
-                    <p class="text-gray-300">Access crypto and forex markets 24/7 with real-time data and instant settlement.</p>
+                    <i class="fas fa-headset text-4xl gold-accent mb-4"></i>
+                    <h3 class="text-2xl font-bold mb-3">24/7 Support</h3>
+                    <p class="text-gray-300">Professional customer support available round the clock for all your needs.</p>
                 </div>
             </div>
         </section>
@@ -224,7 +256,7 @@
                         <h3 class="font-bold text-lg">How do I get started?</h3>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <p class="text-gray-300 hidden mt-4">Simply create an account with your email, deposit crypto to your wallet, and start trading. You'll get $10,000 in demo funds to practice.</p>
+                    <p class="text-gray-300 hidden mt-4">Simply create an account with your email, deposit crypto to your wallet, and start trading.</p>
                 </div>
                 <div class="faq-item card-bg rounded-2xl p-6 cursor-pointer hover:bg-[#1F252F] transition" onclick="toggleFAQ(this)">
                     <div class="flex items-center justify-between">
@@ -238,14 +270,14 @@
                         <h3 class="font-bold text-lg">Is the platform secure?</h3>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <p class="text-gray-300 hidden mt-4">Yes, we use Supabase for authentication with bank-grade security. All transactions are encrypted and monitored for fraud.</p>
+                    <p class="text-gray-300 hidden mt-4">Yes, we use bank-grade security. All transactions are encrypted and monitored for fraud.</p>
                 </div>
                 <div class="faq-item card-bg rounded-2xl p-6 cursor-pointer hover:bg-[#1F252F] transition" onclick="toggleFAQ(this)">
                     <div class="flex items-center justify-between">
                         <h3 class="font-bold text-lg">How do I withdraw my funds?</h3>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <p class="text-gray-300 hidden mt-4">Go to Portfolio > Withdraw and enter your USDT TRC20 wallet address. Withdrawals are processed instantly and securely.</p>
+                    <p class="text-gray-300 hidden mt-4">Go to Portfolio > Withdraw and select your crypto method (BTC, ETH, or USDT). Enter your wallet address and amount.</p>
                 </div>
                 <div class="faq-item card-bg rounded-2xl p-6 cursor-pointer hover:bg-[#1F252F] transition" onclick="toggleFAQ(this)">
                     <div class="flex items-center justify-between">
@@ -254,6 +286,24 @@
                     </div>
                     <p class="text-gray-300 hidden mt-4">We charge minimal trading fees (0.1%) and no deposit/withdrawal fees for crypto transfers.</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- Support Section -->
+        <section id="support" class="max-w-6xl mx-auto px-6 py-16">
+            <div class="card-bg rounded-3xl p-12 text-center">
+                <h2 class="text-4xl font-bold mb-6 gradient-text">Need Help?</h2>
+                <p class="text-gray-300 text-lg mb-8">Our dedicated support team is here to help you 24/7</p>
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                    <a href="mailto:supporttradingvault@gmail.com" class="bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold px-10 py-4 rounded-3xl transition flex items-center gap-2">
+                        <i class="fas fa-envelope"></i> Email Support
+                    </a>
+                    <div class="flex items-center gap-2 text-gray-300">
+                        <i class="fas fa-mail-bulk text-[#F0B90B]"></i>
+                        <span class="font-bold">supporttradingvault@gmail.com</span>
+                    </div>
+                </div>
+                <p class="text-gray-500 text-sm mt-6">Response time: Usually within 24 hours</p>
             </div>
         </section>
 
@@ -276,7 +326,7 @@
             <div class="mb-12">
                 <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-bitcoin gold-accent"></i> Cryptocurrencies</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('BTC/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('BTCUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">Bitcoin</h3>
@@ -284,11 +334,11 @@
                             </div>
                             <i class="fab fa-bitcoin text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-btc-price">--</div>
-                        <div id="market-btc-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('BTC/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-BTCUSD-price">--</div>
+                        <div id="market-BTCUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('BTCUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('ETH/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('ETHUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">Ethereum</h3>
@@ -296,11 +346,11 @@
                             </div>
                             <i class="fab fa-ethereum text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-eth-price">--</div>
-                        <div id="market-eth-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('ETH/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-ETHUSD-price">--</div>
+                        <div id="market-ETHUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('ETHUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('XRPUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">XRP</h3>
@@ -308,9 +358,9 @@
                             </div>
                             <i class="fas fa-coins text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-xrp-price">--</div>
-                        <div id="market-xrp-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XRP/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-XRPUSD-price">--</div>
+                        <div id="market-XRPUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XRPUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
                 </div>
             </div>
@@ -319,7 +369,7 @@
             <div class="mb-12">
                 <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-globe gold-accent"></i> Forex Pairs</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('EUR/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('EURUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">EUR/USD</h3>
@@ -327,11 +377,11 @@
                             </div>
                             <i class="fas fa-chart-line text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-eur-price">--</div>
-                        <div id="market-eur-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('EUR/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-EURUSD-price">--</div>
+                        <div id="market-EURUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('EURUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('GBP/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('GBPUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">GBP/USD</h3>
@@ -339,11 +389,11 @@
                             </div>
                             <i class="fas fa-chart-line text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-gbp-price">--</div>
-                        <div id="market-gbp-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('GBP/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-GBPUSD-price">--</div>
+                        <div id="market-GBPUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('GBPUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('JPY/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('JPYUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">JPY/USD</h3>
@@ -351,52 +401,52 @@
                             </div>
                             <i class="fas fa-chart-line text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-jpy-price">--</div>
-                        <div id="market-jpy-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('JPY/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-JPYUSD-price">--</div>
+                        <div id="market-JPYUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('JPYUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
                 </div>
             </div>
 
             <!-- Commodities Section -->
             <div class="mb-12">
-                <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-star gold-accent"></i> Commodities</h2>
+                <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-gem gold-accent"></i> Commodities</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('XAU/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('XAUUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">Gold</h3>
-                                <p class="text-gray-400 text-sm">XAU/USD (per oz)</p>
+                                <p class="text-gray-400 text-sm">XAU/USD</p>
                             </div>
-                            <i class="fas fa-star text-4xl gold-accent"></i>
+                            <i class="fas fa-gem text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-gold-price">--</div>
-                        <div id="market-gold-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XAU/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-XAUUSD-price">--</div>
+                        <div id="market-XAUUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XAUUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('XAG/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('XAGUSD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">Silver</h3>
-                                <p class="text-gray-400 text-sm">XAG/USD (per oz)</p>
+                                <p class="text-gray-400 text-sm">XAG/USD</p>
                             </div>
                             <i class="fas fa-coins text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-silver-price">--</div>
-                        <div id="market-silver-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XAG/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-XAGUSD-price">--</div>
+                        <div id="market-XAGUSD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('XAGUSD'); event.stopPropagation();">Trade Now</button>
                     </div>
-                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('CRUDE/USD')">
+                    <div class="card-bg rounded-2xl p-6 hover:border-[#F0B90B] border border-transparent transition cursor-pointer" onclick="selectAssetForTrade('CRUDEUD')">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-xl font-bold">Crude Oil</h3>
-                                <p class="text-gray-400 text-sm">WTI/USD (per bbl)</p>
+                                <p class="text-gray-400 text-sm">WTI/USD</p>
                             </div>
                             <i class="fas fa-droplet text-4xl gold-accent"></i>
                         </div>
-                        <div class="text-3xl font-bold mb-2" id="market-crude-price">--</div>
-                        <div id="market-crude-change" class="text-lg font-mono mb-4">--</div>
-                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('CRUDE/USD'); event.stopPropagation();">Trade Now</button>
+                        <div class="text-3xl font-bold mb-2" id="market-CRUDEUD-price">--</div>
+                        <div id="market-CRUDEUD-change" class="text-lg font-mono mb-4">--</div>
+                        <button class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-2 rounded-xl transition" onclick="selectAssetForTrade('CRUDEUD'); event.stopPropagation();">Trade Now</button>
                     </div>
                 </div>
             </div>
@@ -409,36 +459,36 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- Chart Section -->
                 <div class="lg:col-span-8 card-bg rounded-3xl p-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
                         <div>
                             <select id="asset-select" onchange="changeAsset()" class="bg-[#1F252F] p-4 rounded-2xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-[#F0B90B]">
-                                <option value="BTC/USD">BTC/USD - Bitcoin</option>
-                                <option value="ETH/USD">ETH/USD - Ethereum</option>
-                                <option value="EUR/USD">EUR/USD - Euro</option>
-                                <option value="XAU/USD">XAU/USD - Gold</option>
+                                <option value="BTCUSD">BTC/USD - Bitcoin</option>
+                                <option value="ETHUSD">ETH/USD - Ethereum</option>
+                                <option value="EURUSD">EUR/USD - Euro</option>
+                                <option value="XAUUSD">XAU/USD - Gold</option>
                             </select>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="changeTimeframe('1m')" id="tf-1m" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">1m</button>
+                            <button onclick="changeTimeframe('5m')" id="tf-5m" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">5m</button>
+                            <button onclick="changeTimeframe('10m')" id="tf-10m" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">10m</button>
+                            <button onclick="changeTimeframe('1h')" id="tf-1h" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">1h</button>
+                            <button onclick="changeTimeframe('4h')" id="tf-4h" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">4h</button>
+                            <button onclick="changeTimeframe('1d')" id="tf-1d" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">1d</button>
+                            <button onclick="changeTimeframe('1w')" id="tf-1w" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">1w</button>
+                            <button onclick="changeTimeframe('1M')" id="tf-1M" class="timeframe-btn px-4 py-2 rounded-xl bg-[#1F252F] hover:bg-[#2F3540] text-sm font-bold">1M</button>
                         </div>
                         <div class="text-right">
                             <div id="chart-price" class="text-3xl font-bold gold-accent">--</div>
                             <div id="chart-change" class="text-lg font-mono">--</div>
                         </div>
                     </div>
-                    <div class="text-sm text-gray-400 mb-4">📊 TradingView Live Chart • Real-time candlestick data</div>
-                    <!-- TradingView Chart Container -->
-                    <div id="tradingview-chart" style="height: 500px;" class="rounded-xl overflow-hidden bg-black"></div>
+                    <div id="tradingview-chart" class="rounded-xl overflow-hidden bg-black"></div>
                 </div>
 
                 <!-- Trade Panel -->
                 <div class="lg:col-span-4 card-bg rounded-3xl p-6">
                     <h3 class="font-semibold text-xl mb-6">Place Market Order</h3>
-
-                    <div id="trade-in-progress" class="mb-6 p-4 bg-yellow-900/50 border border-yellow-600 rounded-2xl hidden">
-                        <p class="text-yellow-200 font-bold mb-2">⏱️ Trade in Progress</p>
-                        <p class="text-yellow-100 text-sm mb-4" id="trade-progress-text"></p>
-                        <div class="w-full bg-yellow-900 rounded-full h-2">
-                            <div id="trade-progress-bar" style="width: 0%" class="bg-yellow-400 h-2 rounded-full transition-all"></div>
-                        </div>
-                    </div>
 
                     <div id="current-price-display" class="text-center mb-6 p-4 bg-[#1F252F] rounded-2xl">
                         <div class="text-sm text-gray-400 mb-1">Current Price</div>
@@ -489,7 +539,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="card-bg rounded-3xl p-6">
                     <div class="text-sm text-gray-400 mb-2">Account Balance</div>
-                    <div id="total-balance" class="text-4xl font-mono font-bold gold-accent">$10,000.00</div>
+                    <div id="total-balance" class="text-4xl font-mono font-bold gold-accent">$0.00</div>
                 </div>
                 <div class="card-bg rounded-3xl p-6">
                     <div class="text-sm text-gray-400 mb-2">Total P&L</div>
@@ -506,30 +556,57 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-3 mb-8">
+            <div class="flex gap-3 mb-8 flex-wrap">
                 <button onclick="showDepositModal()" class="bg-green-500 hover:bg-green-600 px-8 py-4 rounded-3xl font-bold transition">+ Deposit</button>
                 <button onclick="showWithdrawModal()" class="bg-red-500 hover:bg-red-600 px-8 py-4 rounded-3xl font-bold transition">- Withdraw</button>
             </div>
 
-            <!-- Trade History -->
-            <div class="card-bg rounded-3xl p-6">
-                <h3 class="text-xl font-bold mb-4">Trade History</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm" id="history-table">
-                        <thead>
-                            <tr class="border-b border-gray-700">
-                                <th class="text-left py-3 px-2">Time</th>
-                                <th class="text-left py-3 px-2">Asset</th>
-                                <th class="text-left py-3 px-2">Type</th>
-                                <th class="text-right py-3 px-2">Amount</th>
-                                <th class="text-right py-3 px-2">P&L</th>
-                                <th class="text-center py-3 px-2">Result</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-body">
-                            <tr><td colspan="6" class="text-center py-4 text-gray-400">No trades yet</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Tabs -->
+            <div class="card-bg rounded-3xl p-6 mb-8">
+                <div class="tabs mb-6">
+                    <button class="tab-btn active" onclick="switchTab('trades')">Trade History</button>
+                    <button class="tab-btn" onclick="switchTab('transactions')">Withdrawal History</button>
+                </div>
+
+                <!-- Trade History Tab -->
+                <div id="trades-tab">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-3 px-2">Time</th>
+                                    <th class="text-left py-3 px-2">Asset</th>
+                                    <th class="text-left py-3 px-2">Type</th>
+                                    <th class="text-right py-3 px-2">Amount</th>
+                                    <th class="text-right py-3 px-2">P&L</th>
+                                    <th class="text-center py-3 px-2">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <tr><td colspan="6" class="text-center py-4 text-gray-400">No trades yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Withdrawal History Tab -->
+                <div id="transactions-tab" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-3 px-2">Date</th>
+                                    <th class="text-left py-3 px-2">Crypto</th>
+                                    <th class="text-right py-3 px-2">Amount</th>
+                                    <th class="text-left py-3 px-2">Address</th>
+                                    <th class="text-center py-3 px-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="withdrawal-body">
+                                <tr><td colspan="5" class="text-center py-4 text-gray-400">No withdrawals yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -562,26 +639,46 @@
 
     <!-- Withdraw Modal -->
     <div id="withdraw-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-        <div class="card-bg rounded-3xl p-8 max-w-lg w-full mx-4">
+        <div class="card-bg rounded-3xl p-8 max-w-lg w-full mx-4 modal-overlay">
             <h3 class="text-2xl font-bold mb-6">Withdraw Funds</h3>
-            <p class="text-gray-400 mb-4 text-sm">⚠️ Only USDT (TRC20) withdrawals are currently accepted.</p>
             
+            <div class="mb-6">
+                <label class="text-sm text-gray-400 mb-2 block">Select Withdrawal Method</label>
+                <select id="withdraw-crypto" onchange="updateWithdrawPlaceholder()" class="w-full p-4 bg-[#1F252F] rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-[#F0B90B]">
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="USDT">USDT - TRC20 Only</option>
+                </select>
+            </div>
+
             <div class="mb-4">
                 <label class="text-sm text-gray-400 mb-2 block">Withdrawal Amount (USD)</label>
                 <input id="withdraw-amount" type="number" placeholder="Enter amount" min="10" class="w-full bg-[#1F252F] rounded-2xl px-6 py-4 text-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F0B90B]">
-                <div class="text-xs text-gray-500 mt-1">Available: <span id="available-balance">$10,000.00</span></div>
+                <div class="text-xs text-gray-500 mt-1">Available: <span id="available-balance">$0.00</span></div>
             </div>
 
             <div class="mb-6">
-                <label class="text-sm text-gray-400 mb-2 block">USDT TRC20 Address</label>
-                <input id="withdraw-address" type="text" placeholder="Enter your TRC20 address (starts with T)" class="w-full bg-[#1F252F] rounded-2xl px-6 py-4 text-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F0B90B]">
-                <div class="text-xs text-gray-500 mt-1">Example: TEdZicwvr6imGzo6bjVGt7zhVQiP7jaiRx</div>
+                <label class="text-sm text-gray-400 mb-2 block" id="address-label">Wallet Address</label>
+                <input id="withdraw-address" type="text" placeholder="Enter your wallet address" class="w-full bg-[#1F252F] rounded-2xl px-6 py-4 text-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#F0B90B]">
+                <div class="text-xs text-gray-500 mt-1" id="address-hint">Enter your Bitcoin address</div>
             </div>
 
             <div id="withdraw-error" class="mb-4 bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-2xl hidden text-sm"></div>
 
             <button onclick="processWithdrawal()" class="w-full bg-[#F0B90B] hover:bg-yellow-400 text-black font-bold py-4 rounded-3xl mb-4 transition">CONFIRM WITHDRAWAL</button>
             <button onclick="hideWithdrawModal()" class="w-full bg-gray-700 hover:bg-gray-600 py-4 rounded-3xl font-bold transition">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Trade Progress Modal -->
+    <div id="trade-progress-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-9999 modal-overlay">
+        <div class="trade-progress-modal">
+            <h3 class="text-2xl font-bold mb-4 gradient-text">Trade in Progress</h3>
+            <div class="progress-circle" id="progress-circle">
+                <span id="progress-text">0%</span>
+            </div>
+            <p id="trade-countdown" class="text-gray-600 mb-2">Waiting for market movement...</p>
+            <p class="text-sm text-gray-500">Do not close this window</p>
         </div>
     </div>
 
